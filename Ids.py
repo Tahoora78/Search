@@ -29,8 +29,8 @@ class Graph:
         if (x + 1) < len(node.state[0]):
             if 'x' not in node.state[x + 1][y]:
                 if 'b' in node.state[x + 1][y] and (x + 2) < len(node.state[0]):
-                    if 'x' in node.state[x+2][y]:
-                        return False,None
+                    if 'x' in node.state[x + 2][y]:
+                        return False, None
                     else:
                         node.state[x + 1][y] = node.state[x + 1][y].replace('b', 'r')
                         node.state[x+2][y] = node.state[x+2][y]+'b'
@@ -80,34 +80,3 @@ class Graph:
             if (self.DLS(src, target, i)):
                 return True
         return False
-
-def main():
-    x, y = input().split()
-    x = int(x)
-    y = int(y)
-    initial_state = []
-    for i in range(x):
-        row = input().split()
-        initial_state.append(row)
-    """
-    for i in initial_state:
-        for j in i:
-            print(j, end=" ")
-        print()
-    """
-    x = 0
-    y = 0
-    for i in range(len(initial_state)):
-        for j in range(len(initial_state[i])):
-            if 'r' in initial_state[i][j]:
-                x = j
-                y = i
-    print("x", x, "y", y, "initial_state", initial_state[x][y])
-    initial_node = Node(initial_state, x, y, 0, 'N')
-    graph = Graph(initial_node)
-
-    graph.print_state(initial_node)
-main()
-
-
-
