@@ -1,14 +1,9 @@
 from collections import defaultdict
 import copy
 
+
 class Node:
     def __init__(self, state, x, y, action):
-        """
-        :param state:
-        :param x: x position of robot
-        :param y: y position of robot
-        :param action:'D','U','R','L' ,'N'
-        """
         self.state = state
         self.r_x = int(x)
         self.r_y = int(y)
@@ -17,13 +12,13 @@ class Node:
 
 class Graph:
     def __init__(self, node):
-        # initial node(state)
         self.node = node
-        # default dictionary to store graph
         self.graph = defaultdict(list)
+        self.last_level_node = []
+        self.last_level_node.append(node)
 
-    # function to add an edge to graph
-    def addEdge(self, u, v):
+    def addEdge(self, u, v, action):
+        v.action = action
         self.graph[u].append(v)
 
     def up(self, node):
@@ -142,13 +137,40 @@ class Graph:
                     return result, node
         return result, node
 
-    def producing_next_node(self, node):
-        next_node = copy.deepcopy(node)
-        result, next_node = self.right(next_node)
-        if result:
-            print("success")
-            self.addEdge(node, next_node)
+    def check_goal(self, node):
+        result = True
+        for i in node.state:
+            for j in i:
+                if 'p' in j:
+                    result = False
+                    return result
+        return result
 
+    def producing_one_level_node(self):
+        level_node = []
+        for node in self.last_level_node:
+            level_node = self.producing_next_node(node, level_node)
+        self.last_level_node = level_node
+
+    def producing_next_node(self, node, level_node):
+        next_node = copy.deepcopy(node)
+        r_result, r_next_node = self.right(copy.deepcopy(node))
+        if r_result:
+            level_node.append(r_next_node)
+            self.addEdge(node, r_next_node, 'R')
+        l_result, l_next_node = self.left(copy.deepcopy(node))
+        if l_result:
+            level_node.append(l_next_node)
+            self.addEdge(node, l_next_node, 'L')
+        u_result, u_next_node = self.up(copy.deepcopy(node))
+        if u_result:
+            level_node.append(u_next_node)
+            self.addEdge(node, u_next_node, 'U')
+        d_result, d_next_node = self.down(copy.deepcopy(node))
+        if d_result:
+            level_node.append(d_next_node)
+            self.addEdge(node, d_next_node, 'D')
+        return level_node
 
     def print_state(self, node):
         print(len(node.state), " ", len(node.state[1]))
@@ -157,27 +179,44 @@ class Graph:
                 print(j, end="  ")
             print()
 
-    def DLS(self, src, target, maxDepth):
+    def find_key_value(self, val):
+        for key, value in self.graph.items():
+            if val in value:
+                return key
 
-        if src == target: return True
+    def DLS(self, src, maxDepth):
+        if self.check_goal(src):
+            return True, src
+        if maxDepth <= 0:
+            return False, None
 
-        # If reached the maximum depth, stop recursing.
-        if maxDepth <= 0: return False
-
-        # Recur for all the vertices adjacent to this vertex
         for i in self.graph[src]:
-            if (self.DLS(i, target, maxDepth - 1)):
-                return True
-        return False
+            result, target = self.DLS(i, maxDepth - 1)
+            if result:
+                return True, target
+        return False, None
 
-    # IDDFS to search if target is reachable from v.
-    # It uses recursive DLS()
-    def IDDFS(self, src, target, maxDepth):
-
-        # Repeatedly depth-limit search till the
-        # maximum depth
+    def IDDFS(self, src, maxDepth):
         for i in range(maxDepth):
-            if (self.DLS(src, target, i)):
+            if i != 0:
+                self.producing_one_level_node()
+            result, target = self.DLS(src, i)
+            if result:
+                final_list = []
+                #print("graph", self.graph)
+                depth = i
+                final_list.append(target)
+                pre_node1 = self.find_key_value(target)
+                final_list.append(pre_node1)
+                for i in range(i - 1):
+                    pre_node1 = self.find_key_value(pre_node1)
+                    final_list.append(pre_node1)
+                for i in range(len(final_list) - 2, -1, -1):
+                    print(final_list[i].action, end=' ')
+                print()
+                cost = len(final_list)-1
+                print(cost)
+                print(depth)
                 return True
         return False
 
@@ -196,9 +235,11 @@ def main():
             if 'r' in initial_states[i][j]:
                 y = i
                 x = j
-    print("x", x, "y", y, "initial_state", initial_states[x][y])
     graph = Graph(Node(initial_states, x, y, 'N'))
-    graph.print_state(graph.node)
-    result, node = graph.down(graph.node)
-    graph.print_state(node)
+    if graph.IDDFS(graph.node, 5):
+        print("Target is reachable from source " +
+              "within max depth")
+    else:
+        print("Target is NOT reachable from source " +
+              "within max depth")
 main()
