@@ -2,13 +2,17 @@ from collections import defaultdict
 import copy
 
 class Node:
-    def __init__(self, state, x, y, depth, action):
+    def __init__(self, state, x, y, action):
+        """
+        :param state:
+        :param x: x position of robot
+        :param y: y position of robot
+        :param action:'D','U','R','L' ,'N'
+        """
         self.state = state
-        self.x = int(x)
-        self.y = int(y)
-        self.depth = depth
+        self.r_x = int(x)
+        self.r_y = int(y)
         self.action = action
-        #self.cost = cost
 
 
 class Graph:
@@ -22,39 +26,135 @@ class Graph:
     def addEdge(self, u, v):
         self.graph[u].append(v)
 
+    def up(self, node):
+        x = node.r_x
+        y = node.r_y
+        result = False
+        if (y - 1) >= 0:
+            if 'x' not in node.state[y-1][x]:
+                if 'b' in node.state[y-1][x] and (y - 2) >= 0:
+                    if not('x' in node.state[y-2][x]) and not('p' in node.state[y-2][x]) and not('b' in node.state[y-2][x]):
+                        node.state[y-1][x] = node.state[y-1][x].replace('b', 'r')
+                        node.state[y-2][x] = node.state[y-2][x]+'b'
+                        node.state[y][x] = node.state[y][x].replace('r', '')
+                        result = True
+                        node.r_y -= 1
+                        return result, node
+                    if 'p' in node.state[y-2][x]:
+                        node.state[y-1][x] = node.state[y-1][x].replace('b', 'r')
+                        node.state[y][x] = node.state[y][x].replace('r', '')
+                        node.state[y-2][x] = node.state[y-2][x].replace('p', 'x')
+                        result = True
+                        node.r_y -= 1
+                        return result, node
+                if not('b' in node.state[y-1][x]) and not('p' in node.state[y-1][x]):
+                    node.state[y][x] = node.state[y][x].replace('r', '')
+                    node.state[y-1][x] = node.state[y-1][x]+'r'
+                    result = True
+                    node.r_y -= 1
+                    return result, node
+        return result, node
+
+    def down(self, node):
+        x = node.r_x
+        y = node.r_y
+        result = False
+        if (y + 1) < len(node.state):
+            if 'x' not in node.state[y+1][x]:
+                if 'b' in node.state[y+1][x] and (y + 2) < len(node.state):
+                    if not('x' in node.state[y+2][x]) and not('p' in node.state[y+2][x]) and not('b' in node.state[y+2][x]):
+                        node.state[y+1][x] = node.state[y+1][x].replace('b', 'r')
+                        node.state[y+2][x] = node.state[y+2][x]+'b'
+                        node.state[y][x] = node.state[y][x].replace('r', '')
+                        result = True
+                        node.r_y += 1
+                        return result, node
+                    if 'p' in node.state[y+2][x]:
+                        node.state[y+1][x] = node.state[y+1][x].replace('b', 'r')
+                        node.state[y][x] = node.state[y][x].replace('r', '')
+                        node.state[y+2][x] = node.state[y+2][x].replace('p', 'x')
+                        result = True
+                        node.r_y += 1
+                        return result, node
+                if not('b' in node.state[y+1][x]) and not('p' in node.state[y+1][x]):
+                    node.state[y][x] = node.state[y][x].replace('r', '')
+                    node.state[y+1][x] = node.state[y+1][x]+'r'
+                    result = True
+                    node.r_y += 1
+                    return result, node
+        return result, node
 
     def right(self, node):
-        x = node.x
-        y = node.y
+        x = node.r_x
+        y = node.r_y
+        result = False
         if (x + 1) < len(node.state[0]):
-            if 'x' not in node.state[x + 1][y]:
-                if 'b' in node.state[x + 1][y] and (x + 2) < len(node.state[0]):
-                    if 'x' in node.state[x + 2][y]:
-                        return False, None
-                    else:
-                        node.state[x + 1][y] = node.state[x + 1][y].replace('b', 'r')
-                        node.state[x+2][y] = node.state[x+2][y]+'b'
-                        node.state[x][y] = node.state[x][y].replace('r', '')
-                        return True, node.state
-                else:
-                    node.state[x][y] = node.state[x][y].replace('r', '')
-                    node.state[x+1][y] = node.state[x+1][y]+'r'
-                    return True, node.state
-            else:
-                return False,None
-        else:
-            return False, None
+            if 'x' not in node.state[y][x+1]:
+                if 'b' in node.state[y][x+1] and (x + 2) < len(node.state[0]):
+                    if not('x' in node.state[y][x+2]) and not('p' in node.state[y][x+2]) and not('b' in node.state[y][x+2]):
+                        node.state[y][x+1] = node.state[y][x+1].replace('b', 'r')
+                        node.state[y][x+2] = node.state[y][x+2]+'b'
+                        node.state[y][x] = node.state[y][x].replace('r', '')
+                        result = True
+                        node.r_x += 1
+                        return result, node
+                    if 'p' in node.state[y][x+2]:
+                        node.state[y][x + 1] = node.state[y][x + 1].replace('b', 'r')
+                        node.state[y][x] = node.state[y][x].replace('r', '')
+                        node.state[y][x + 2] = node.state[y][x + 2].replace('p','x')
+                        result = True
+                        node.r_x += 1
+                        return result, node
+                if not('b' in node.state[y][x+1]) and not('p' in node.state[y][x+1]):
+                    node.state[y][x] = node.state[y][x].replace('r', '')
+                    node.state[y][x+1] = node.state[y][x+1]+'r'
+                    result = True
+                    node.r_x += 1
+                    return result, node
+        return result, node
+
+    def left(self, node):
+        x = node.r_x
+        y = node.r_y
+        result = False
+        if (x - 1) >= 0:
+            if 'x' not in node.state[y][x-1]:
+                if 'b' in node.state[y][x-1] and (x - 2) >= 0:
+                    if not('x' in node.state[y][x-2]) and not('p' in node.state[y][x-2]) and not('b' in node.state[y][x-2]):
+                        node.state[y][x-1] = node.state[y][x-1].replace('b', 'r')
+                        node.state[y][x-2] = node.state[y][x-2]+'b'
+                        node.state[y][x] = node.state[y][x].replace('r', '')
+                        result = True
+                        node.r_x -= 1
+                        return result, node
+                    if 'p' in node.state[y][x-2]:
+                        node.state[y][x - 1] = node.state[y][x - 1].replace('b', 'r')
+                        node.state[y][x] = node.state[y][x].replace('r', '')
+                        node.state[y][x - 2] = node.state[y][x - 2].replace('p', 'x')
+                        result = True
+                        node.r_x -= 1
+                        return result, node
+                if not('b' in node.state[y][x-1]) and not('p' in node.state[y][x-1]):
+                    node.state[y][x] = node.state[y][x].replace('r', '')
+                    node.state[y][x-1] = node.state[y][x-1]+'r'
+                    result = True
+                    node.r_x -= 1
+                    return result, node
+        return result, node
 
     def producing_next_node(self, node):
-        next_node = copy.deepcopy(self.n)
+        next_node = copy.deepcopy(node)
+        result, next_node = self.right(next_node)
+        if result:
+            print("success")
+            self.addEdge(node, next_node)
 
-        pass
 
     def print_state(self, node):
         print(len(node.state), " ", len(node.state[1]))
         for i in node.state:
             for j in i:
-                print(j, end=" ")
+                print(j, end="  ")
             print()
 
     def DLS(self, src, target, maxDepth):
@@ -80,3 +180,25 @@ class Graph:
             if (self.DLS(src, target, i)):
                 return True
         return False
+
+def main():
+    x, y = input().split()
+    x = int(x)
+    y = int(y)
+    initial_states = []
+    for i in range(x):
+        row = input().split()
+        initial_states.append(row)
+    x = 0
+    y = 0
+    for i in range(len(initial_states)):
+        for j in range(len(initial_states[i])):
+            if 'r' in initial_states[i][j]:
+                y = i
+                x = j
+    print("x", x, "y", y, "initial_state", initial_states[x][y])
+    graph = Graph(Node(initial_states, x, y, 'N'))
+    graph.print_state(graph.node)
+    result, node = graph.down(graph.node)
+    graph.print_state(node)
+main()
