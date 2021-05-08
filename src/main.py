@@ -20,7 +20,7 @@ def main():
     print("x", x, "y", y, "initial_state", initial_states[x][y])
     initial_node = Ids.Node(initial_states, x, y, 0, 'N', int(initial_states[x][y][0]))
 
-    IdsAlgo(initial_node)
+    AstarAlgo(initial_node)
 
 def IdsAlgo(initial_node):
     graph = Ids.Graph(initial_node)
