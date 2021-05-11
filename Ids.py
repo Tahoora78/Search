@@ -151,6 +151,12 @@ class Graph:
         for node in self.last_level_node:
             level_node = self.producing_next_node(node, level_node)
         self.last_level_node = level_node
+        #print("======================================================")
+        #for i in self.last_level_node:
+         #   print(':LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL')
+          #  self.print_state(i)
+           # print('LLLLLLLLLLLLLLLLLLLLLLLLLLLLLL')
+        #print("=================================-------------------------")
 
     def producing_next_node(self, node, level_node):
         next_node = copy.deepcopy(node)
@@ -197,11 +203,18 @@ class Graph:
         return False, None
 
     def IDDFS(self, src, maxDepth):
-        for i in range(maxDepth):
+        result = False
+        #for i in range(maxDepth):
+        i=0
+        while result!=True:
+            print("ii", i)
             if i != 0:
                 self.producing_one_level_node()
             result, target = self.DLS(src, i)
-            if result:
+            i +=1
+        if result:
+                i -= 1
+                print("result", result)
                 final_list = []
                 #print("graph", self.graph)
                 depth = i
@@ -213,6 +226,12 @@ class Graph:
                     final_list.append(pre_node1)
                 for i in range(len(final_list) - 2, -1, -1):
                     print(final_list[i].action, end=' ')
+                for m in range(len(final_list) - 2, -1, -1):
+                    print()
+                    print("::::::::::::::::::::::::::::::::::::")
+                    self.print_state(final_list[m])
+                    print("::::::::::::::::::::::::::::::::::::::::::")
+                    #print(final_list[m], end=' ')
                 print()
                 cost = len(final_list)-1
                 print(cost)
@@ -236,7 +255,7 @@ def main():
                 y = i
                 x = j
     graph = Graph(Node(initial_states, x, y, 'N'))
-    if graph.IDDFS(graph.node, 5):
+    if graph.IDDFS(graph.node, 6):
         print("Target is reachable from source " +
               "within max depth")
     else:
