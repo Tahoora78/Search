@@ -1,16 +1,13 @@
 from collections import defaultdict
 import copy
 
+
 class Node:
-    def __init__(self, state, x, y, action, cost):
+    def __init__(self, state, x, y, action):
         self.state = state
         self.r_x = int(x)
         self.r_y = int(y)
         self.action = action
-        self.cost = cost
-
-    def getCost(self):
-        print(self.cost)
 
 
 class Graph:
@@ -154,12 +151,6 @@ class Graph:
         for node in self.last_level_node:
             level_node = self.producing_next_node(node, level_node)
         self.last_level_node = level_node
-        #print("======================================================")
-        #for i in self.last_level_node:
-         #   print(':LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL')
-          #  self.print_state(i)
-           # print('LLLLLLLLLLLLLLLLLLLLLLLLLLLLLL')
-        #print("=================================-------------------------")
 
     def producing_next_node(self, node, level_node):
         next_node = copy.deepcopy(node)
@@ -219,7 +210,6 @@ class Graph:
                 i -= 1
                 print("result", result)
                 final_list = []
-                #print("graph", self.graph)
                 depth = i
                 final_list.append(target)
                 pre_node1 = self.find_key_value(target)
@@ -234,7 +224,6 @@ class Graph:
                     print("::::::::::::::::::::::::::::::::::::")
                     self.print_state(final_list[m])
                     print("::::::::::::::::::::::::::::::::::::::::::")
-                    #print(final_list[m], end=' ')
                 print()
                 cost = len(final_list)-1
                 print(cost)
