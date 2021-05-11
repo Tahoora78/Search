@@ -1,13 +1,16 @@
 from collections import defaultdict
 import copy
 
-
 class Node:
-    def __init__(self, state, x, y, action):
+    def __init__(self, state, x, y, action, cost):
         self.state = state
         self.r_x = int(x)
         self.r_y = int(y)
         self.action = action
+        self.cost = cost
+
+    def getCost(self):
+        print(self.cost)
 
 
 class Graph:

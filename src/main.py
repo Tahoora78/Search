@@ -1,4 +1,5 @@
 import Ids
+import A_star
 
 def main():
     x, y = input().split()
@@ -8,12 +9,7 @@ def main():
     for i in range(x):
         row = input().split()
         initial_states.append(row)
-    """
-    for i in initial_states:
-        for j in i:
-            print(j, end=" ")
-        print()
-    """
+
     x = 0
     y = 0
     for i in range(len(initial_states)):
@@ -22,15 +18,17 @@ def main():
                 x = i
                 y = j
     print("x", x, "y", y, "initial_state", initial_states[x][y])
-    initial_nodes = Ids.Node(initial_states, x, y, 0, 'N')
+    initial_node = Ids.Node(initial_states, x, y, 0, 'N', int(initial_states[x][y][0]))
 
-    IdsAlgo(initial_nodes)
+    AstarAlgo(initial_node)
 
-def IdsAlgo(initial_nodes):
-    graph = Ids.Graph(initial_nodes)
-    graph.print_state(initial_nodes)
+def IdsAlgo(initial_node):
+    graph = Ids.Graph(initial_node)
+    graph.print_state(initial_node)
+    initial_node.getCost()
 
-def AstarAlgo(initial_nodes):
-    pass
+def AstarAlgo(initial_node):
+    graph = A_star.Graph(initial_node)
+    graph.print_state(initial_node)
 
 main()
