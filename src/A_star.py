@@ -2,7 +2,7 @@ from collections import defaultdict
 import copy
 
 class Table:
-    def __init__(self, col, row):
+    def __init__(self, row, col):
         self.col = col
         self.row = row
         self.table = []
@@ -10,11 +10,31 @@ class Table:
         self.b = []
         self.p = []
 
+    """
+    just for checking :D
+    """
     def printTable(self):
-        for i in range(self.row):
-            for j in range(self.col):
-                print("x", j, "y", i, "mohtava: ", self.table[j][i].cost)
+        print("row", self.row, "col", self.col)
+        for j in range(self.row):
+            for i in range(self.col):
+                print("({},{}):".format(i, j), self.table[j][i].cost, end = " ")
+            print()
 
+    def setR(self, initial_states):
+        x = 0
+        y = 0
+        for j in range(self.row):
+            for i in range(self.col):
+                if 'r' in initial_states[j][i]:
+                    x = i
+                    y = j
+                    print("i, j", i, j)
+        print("x", x, "y", y, "initial_state", initial_states[y][x])
+        #initial_node = Ids.Node(initial_states, x, y, 0, 'N', int(initial_states[x][y][0]))
+
+    """
+    Create the table with input values
+    """
     def setTable(self):
         initial_states = []
         for i in range(self.row):
@@ -22,26 +42,28 @@ class Table:
             initial_states.append(row)
 
         # 2D array of squares
-        for i in range(self.row):
+        for j in range(self.row):
             col = []
-            for j in range(self.col):
-                if(initial_states[i][j][0] != 'x'):
-                    newSquare = Square(j, i, int(initial_states[i][j][0]))
+            for i in range(self.col):
+                # make each square
+                if 'x' not in initial_states[j][i]:
+                    newSquare = Square(i, j, int(initial_states[j][i][0]))
                 else:
-                    newSquare = Square(j, i, 1000000)
+                    newSquare = Square(i, j, 1000000)
+
                 col.append(newSquare)
             self.table.append(col)
+
+        print(initial_states)
+
+        # print the table to check
         Table.printTable(self)
 
-        x = 0
-        y = 0
-        for i in range(len(initial_states)):
-            for j in range(len(initial_states[i])):
-                if 'r' in initial_states[i][j]:
-                    x = i
-                    y = j
-        print("x", x, "y", y, "initial_state", initial_states[x][y])
-        #initial_node = Ids.Node(initial_states, x, y, 0, 'N', int(initial_states[x][y][0]))
+        # find and set initial state
+        Table.setR(self, initial_states)
+
+        # now is time to calculate the cost of each square from goalSquare
+
 
 class Square:
     def __init__(self, x, y, cost):
@@ -91,6 +113,6 @@ class Graph:
                 print(j, end=" ")
             print()
 
-x, y = input().split()
-states = Table(int(x), int(y))
+y, x = input().split()
+states = Table(int(y), int(x))
 Table.setTable(states)
