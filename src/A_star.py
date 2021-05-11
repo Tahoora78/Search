@@ -17,7 +17,7 @@ class Table:
         print("row", self.row, "col", self.col)
         for j in range(self.row):
             for i in range(self.col):
-                print("({},{}):".format(i, j), self.table[j][i].cost, self.table[j][i].role, end = " ")
+                print("({},{}):".format(i, j), self.table[j][i].heuristicCost, self.table[j][i].role, end = " ")
             print()
 
     """
@@ -56,6 +56,106 @@ class Table:
         for i in range(len(self.p)):
             print("x", self.p[i].x, "y", self.p[i].y, "->", self.p[i].cost, self.p[i].role)
 
+    def calculateUP(self, x_g, y_g):
+        if (y_g > 0):
+            for minusY in range(y_g - 1, -1, -1): # check y = (y_g-1 downto 0)
+                if (minusY > 0):
+                    if (self.table[minusY - 1][x_g].cost != 1000000): # if the upper square is not x
+                        # cost = cost of this Square + heuristicCost of the bottom square
+                        cellCost = self.table[minusY][x_g].cost + self.table[minusY + 1][x_g].heuristicCost
+                        self.table[minusY][x_g].addArrayCost(cellCost)
+                    else:
+                        self.table[minusY][x_g].addArrayCost(1000000)
+                else:
+                    self.table[minusY][x_g].addArrayCost(1000000)
+
+    def calculateDOWN(self, x_g, y_g):
+        if (y_g < self.row - 1):
+            for plusY in range(y_g + 1, self.row): # check y = (y_g+1 to row-1)
+                if (plusY < self.row - 1):
+                    if (self.table[plusY + 1][x_g].cost != 1000000): # if the below square is not x
+                        # cost = cost of this Square + heuristicCost of the top square
+                        cellCost = self.table[plusY][x_g].cost + self.table[plusY - 1][x_g].heuristicCost
+                        self.table[plusY][x_g].addArrayCost(cellCost)
+                    else:
+                        self.table[plusY][x_g].addArrayCost(1000000)
+                else:
+                    self.table[plusY][x_g].addArrayCost(1000000)
+
+    def calculateLEFT(self, x_g, y_g):
+        if (x_g > 0):
+            for minusX in range(x_g - 1, -1, -1): # check x = (x_g-1 downto 0)
+                if (minusX > 0):
+                    if (self.table[y_g][minusX - 1].cost != 1000000): # if the left square is not x
+                        # cost = cost of this Square + heuristicCost of the right square
+                        cellCost = self.table[y_g][minusX].cost + self.table[y_g][minusX + 1].heuristicCost
+                        self.table[y_g][minusX].addArrayCost(cellCost)
+                    else:
+                        self.table[y_g][minusX].addArrayCost(1000000)
+                else:
+                    self.table[y_g][minusX].addArrayCost(1000000)
+
+    def calculateRIGHT(self, x_g, y_g):
+        if (x_g < self.col - 1):
+            for plusX in range(x_g + 1, self.col): # check x = (x_g+1 to col-1)
+                if (plusX < self.col - 1):
+                    if (self.table[y_g][plusX + 1].cost != 1000000): # if the right square is not x
+                        # cost = cost of this Square + heuristicCost of the left square
+                        cellCost = self.table[y_g][plusX].cost + self.table[y_g][plusX - 1].heuristicCost
+                        self.table[y_g][plusX].addArrayCost(cellCost)
+                    else:
+                        self.table[y_g][plusX].addArrayCost(1000000)
+                else:
+                    self.table[y_g][plusX].addArrayCost(1000000)
+
+    """
+    Calculate a heuristic cost for each square based on distance and squares' costs.
+    """
+    def calculateCostsForSquares(self, goalSquare, x_g, y_g):
+        # set the cost of goalSquare to zero
+        self.table[y_g][x_g].addArrayCost(0)
+        self.table[y_g][x_g].heuristicCost = 0
+
+        # set cost for all squares that are upper than the goalSquare
+        Table.calculateUP(self, x_g, y_g)
+
+        # set cost for all squares that are under the goalSquare
+        Table.calculateDOWN(self, x_g, y_g)
+
+        # set cost for all squares that are at the left of the goalSquare
+        Table.calculateLEFT(self, x_g, y_g)
+
+        # set cost for all squares that are at the right of the goalSquare
+        Table.calculateRIGHT(self, x_g, y_g)
+
+        # up and left
+        if (y_g > 0) and (x_g > 0):
+            for minusX in range(x_g - 1, -1, -1): # check x = (x_g-1 downto 0)
+                Table.calculateUP(self, minusX, y_g)
+            for minusY in range(y_g - 1, -1, -1): # check y = (y_g-1 downto 0)
+                Table.calculateLEFT(self, x_g, minusY)
+
+        # down and left
+        if (y_g < self.row - 1) and (x_g > 0):
+            for minusX in range(x_g - 1, -1, -1): # check x = (x_g-1 downto 0)
+                Table.calculateDOWN(self, minusX, y_g)
+            for plusY in range(y_g + 1, self.row): # check y = (y_g+1 to row-1)
+                Table.calculateLEFT(self, x_g, plusY)
+
+        # up and right
+        if (y_g > 0) and (x_g < self.col - 1):
+            for plusX in range(x_g + 1, self.col): # check x = (x_g+1 to col-1)
+                Table.calculateUP(self, plusX, y_g)
+            for minusY in range(y_g - 1, -1, -1): # check y = (y_g-1 downto 0)
+                Table.calculateRIGHT(self, x_g, minusY)
+
+        # down and right
+        if (y_g < self.row - 1) and (x_g < self.col - 1):
+            for plusX in range(x_g + 1, self.col): # check x = (x_g+1 to col-1)
+                Table.calculateDOWN(self, plusX, y_g)
+            for plusY in range(y_g + 1, self.row): # check y = (y_g+1 to row-1)
+                Table.calculateRIGHT(self, x_g, plusY)
+
     """
     Create the table with input values
     """
@@ -85,16 +185,17 @@ class Table:
                 col.append(newSquare)
             self.table.append(col)
 
-        # print the table to check
-        Table.printTable(self)
-
         # find and set initial state, butter state(s) and goal state(s)
         Table.setR(self)
         Table.setB(self)
         Table.setP(self)
 
         # now is time to calculate the cost of each square from goalSquare
+        for goal in self.p:
+            Table.calculateCostsForSquares(self, goal, goal.x, goal.y)
 
+        # print the table to check
+        Table.printTable(self)
 
 class Square:
     def __init__(self, x, y, cost, role):
@@ -104,6 +205,18 @@ class Square:
         self.role = role
         self.heuristicCost = 0
         self.arrayCost = []
+
+    """
+    Add the new cost and update heuristicCost
+    """
+    def addArrayCost(self, c):
+        self.arrayCost.append(c)
+
+        minH = min(self.arrayCost)
+        self.heuristicCost = minH
+
+        # print to check
+        # print("x, y:", self.x, self.y, self.arrayCost, self.heuristicCost)
 
 class Node:
     def __init__(self, state, x, y, action, cost):
@@ -120,30 +233,6 @@ class Graph:
         # default dictionary to store graph
         self.graph = defaultdict(list)
 
-    def heuristic(self, table, cell):
-        """
-        compute the heuristic of cell
-        estimated cost for cell = manhattan distance (robot, butter, costs)
-                                + manhattan distance (butter, goal, costs)
-        """
-
-
-
-    def addEdge(self, u, v):
-        """
-        add an edge to graph
-        """
-        self.graph[u].append(v)
-
-    def print_states(self, node):
-        """
-        get a node and print all states under that node
-        """
-        print(len(node.state), " ", len(node.state[1]))
-        for i in node.state:
-            for j in i:
-                print(j, end=" ")
-            print()
 
 y, x = input().split()
 states = Table(int(y), int(x))
