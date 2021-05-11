@@ -23,7 +23,7 @@ class Table:
     """
     find and set initial state
     """
-    def setR(self, initial_states):
+    def setR(self):
         for j in range(self.row):
             for i in range(self.col):
                 if (self.table[j][i].role == 'r'):
@@ -31,6 +31,30 @@ class Table:
                     y = j
         print("x", x, "y", y, "->", self.table[y][x].cost, self.table[y][x].role)
         self.r = self.table[y][x]
+
+    """
+    find and set butter state(s)
+    """
+    def setB(self):
+        for j in range(self.row):
+            for i in range(self.col):
+                if (self.table[j][i].role == 'b'):
+                    self.b.append(self.table[j][i])
+
+        for i in range(len(self.b)):
+            print("x", self.b[i].x, "y", self.b[i].y, "->", self.b[i].cost, self.b[i].role)
+
+    """
+    find and set goal state(s)
+    """
+    def setP(self):
+        for j in range(self.row):
+            for i in range(self.col):
+                if (self.table[j][i].role == 'p'):
+                    self.p.append(self.table[j][i])
+
+        for i in range(len(self.p)):
+            print("x", self.p[i].x, "y", self.p[i].y, "->", self.p[i].cost, self.p[i].role)
 
     """
     Create the table with input values
@@ -64,8 +88,10 @@ class Table:
         # print the table to check
         Table.printTable(self)
 
-        # find and set initial state
-        Table.setR(self, initial_states)
+        # find and set initial state, butter state(s) and goal state(s)
+        Table.setR(self)
+        Table.setB(self)
+        Table.setP(self)
 
         # now is time to calculate the cost of each square from goalSquare
 
