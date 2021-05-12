@@ -240,6 +240,22 @@ class Table:
         Table.calculateRIGHT(self, x_g, y_g, 2)
 
     """
+    choose the best butter based on calculated heuristics
+    """
+    def chooseButter(self):
+        minCost = 2000000
+        for b in self.b:
+            print("butter:", b.x, b.y, b.role, b.heuristicCost)
+            if (b.heuristicCost < minCost):
+                minCost = b.heuristicCost
+                if (minCost < 1000000):
+                    print("selected butter:", b.x, b.y, b.role)
+                    return b.x, b.y
+
+        print("can’t pass the butter")
+        return -1, -1
+
+    """
     Create the table with input values
     """
     def setTable(self):
@@ -280,6 +296,12 @@ class Table:
             # print the table to check
             Table.printTable(self)
 
+            # choose the butter to move
+            b_x, b_y = Table.chooseButter(self)
+            if (b_x == -1): # can’t pass the butter
+                return
+
+
 class Square:
     def __init__(self, x, y, cost, role):
         self.x = x
@@ -300,22 +322,6 @@ class Square:
 
         # print to check
         # print("x, y:", self.x, self.y, self.arrayCost, self.heuristicCost)
-
-class Node:
-    def __init__(self, state, x, y, action, cost):
-        self.state = state
-        self.r_x = int(x)
-        self.r_y = int(y)
-        self.action = action
-        self.cost = cost
-
-class Graph:
-    def __init__(self, node):
-        # initial node(state)
-        self.node = node
-        # default dictionary to store graph
-        self.graph = defaultdict(list)
-
 
 y, x = input().split()
 states = Table(int(y), int(x))
