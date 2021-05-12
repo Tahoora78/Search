@@ -17,7 +17,10 @@ class Table:
         print("row", self.row, "col", self.col)
         for j in range(self.row):
             for i in range(self.col):
-                print("({},{}):".format(i, j), self.table[j][i].heuristicCost, self.table[j][i].role, end = " ")
+                if self.table[j][i].heuristicCost >= 1000000:
+                    print("({},{}):".format(i, j), 'f', self.table[j][i].role, end = " ")
+                else:
+                    print("({},{}):".format(i, j), self.table[j][i].heuristicCost, self.table[j][i].role, end = " ")
             print()
 
     """
@@ -386,9 +389,9 @@ class Graph:
         y = node.r_y
         result = False
         if (x + 1) < node.state.col:
-            if (node.state.table[y][x+1].role != 'x'):
+            if node.state.table[y][x+1].role != 'x':
                 if node.state.table[y][x+1].role == 'b' and (x + 2) < node.state.col:
-                    if (node.state.table[y][x+2].role == 'n'):
+                    if node.state.table[y][x+2].role == 'n':
                         node.state.table[y][x+1].role = 'r'
                         node.state.table[y][x+2].role = 'b'
                         node.state.table[y][x].role = 'n'
@@ -413,6 +416,48 @@ class Graph:
         if result:
             node.r_x += 1
             node.action.append('R')
+            node.calculateHeuristic()
+
+        node.state.printTable()
+        print(node.totalCost)
+
+        return result, node
+
+    """
+
+    """
+    def left(self, node):
+        x = node.r_x
+        y = node.r_y
+        result = False
+        if (x - 1) >= 0:
+            if node.state.table[y][x-1].role != 'x':
+                if node.state.table[y][x-1].role == 'b' and (x - 2) >= 0:
+                    if node.state.table[y][x-2].role == 'n':
+                        node.state.table[y][x-1].role = 'r'
+                        node.state.table[y][x-2].role = 'b'
+                        node.state.table[y][x].role = 'n'
+                        node.state.setR(node.state.table[y][x-1])
+                        node.state.setB(node.state.table[y][x-1], node.state.table[y][x-2])
+                        result = True
+
+                    if node.state.table[y][x-2].role == 'p':
+                        node.state.table[y][x-1].role = 'r'
+                        node.state.table[y][x].role = 'n'
+                        node.state.table[y][x-2].role = 'x'
+                        node.state.setR(node.state.table[y][x-1])
+                        node.state.removeB_P(node.state.table[y][x-1], node.state.table[y][x-2])
+                        result = True
+
+                if (node.state.table[y][x+1].role != 'b') and (node.state.table[y][x+1].role != 'p'):
+                    node.state.table[y][x].role = 'n'
+                    node.state.table[y][x-1].role = 'r'
+                    node.state.setR(node.state.table[y][x-1])
+                    result = True
+
+        if result:
+            node.r_x -= 1
+            node.action.append('L')
             node.calculateHeuristic()
 
         node.state.printTable()
@@ -538,35 +583,6 @@ class Graph:
                     node.state[y+1][x] = node.state[y+1][x]+'r'
                     result = True
                     node.r_y += 1
-                    return result, node
-        return result, node
-
-    def left(self, node):
-        x = node.r_x
-        y = node.r_y
-        result = False
-        if (x - 1) >= 0:
-            if 'x' not in node.state[y][x-1]:
-                if 'b' in node.state[y][x-1] and (x - 2) >= 0:
-                    if not('x' in node.state[y][x-2]) and not('p' in node.state[y][x-2]) and not('b' in node.state[y][x-2]):
-                        node.state[y][x-1] = node.state[y][x-1].replace('b', 'r')
-                        node.state[y][x-2] = node.state[y][x-2]+'b'
-                        node.state[y][x] = node.state[y][x].replace('r', '')
-                        result = True
-                        node.r_x -= 1
-                        return result, node
-                    if 'p' in node.state[y][x-2]:
-                        node.state[y][x - 1] = node.state[y][x - 1].replace('b', 'r')
-                        node.state[y][x] = node.state[y][x].replace('r', '')
-                        node.state[y][x - 2] = node.state[y][x - 2].replace('p', 'x')
-                        result = True
-                        node.r_x -= 1
-                        return result, node
-                if not('b' in node.state[y][x-1]) and not('p' in node.state[y][x-1]):
-                    node.state[y][x] = node.state[y][x].replace('r', '')
-                    node.state[y][x-1] = node.state[y][x-1]+'r'
-                    result = True
-                    node.r_x -= 1
                     return result, node
         return result, node
 
