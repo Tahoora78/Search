@@ -250,10 +250,40 @@ class Table:
                 minCost = b.heuristicCost
                 if (minCost < 1000000):
                     print("selected butter:", b.x, b.y, b.role)
-                    return b.x, b.y
+                    return b
 
         print("can’t pass the butter")
-        return -1, -1
+        return None
+
+    def findRobotGoal(self, butter):
+        # first find the next butter's steps
+        nextSteps = []
+        if (butter.y > 0): #UP
+            nextSteps.append(self.table[butter.y - 1][butter.x])
+        if (butter.x > 0): #LEFT
+            nextSteps.append(self.table[butter.y][butter.x - 1])
+        if (butter.y < self.row - 1): #DOWN
+            nextSteps.append(self.table[butter.y + 1][butter.x])
+        if (butter.x < self.col - 1): #RIGHT
+            nextSteps.append(self.table[butter.y][butter.x + 1])
+
+        # find the best step(s)
+        bestSteps = []
+        minCost = 1000000
+        for b in nextSteps:
+            if (b.heuristicCost < minCost):
+                minCost = b.heuristicCost
+        for b in nextSteps:
+            if (b.heuristicCost == minCost):
+                bestSteps.append(b)
+
+        # now find the robot's goal position
+        for b in bestSteps:
+            x = butter.x - (b.x - butter.x)
+            y = butter.y - (b.y - butter.y)
+            if (self.table[y][x].role != 'x'):
+                print ("robot's goal position:", x, y)
+                return b
 
     """
     Create the table with input values
@@ -297,10 +327,12 @@ class Table:
             Table.printTable(self)
 
             # choose the butter to move
-            b_x, b_y = Table.chooseButter(self)
-            if (b_x == -1): # can’t pass the butter
+            b = Table.chooseButter(self)
+            if (b == None): # can’t pass the butter
                 return
 
+            # find the next step of butter and so determine the square which robot has to go there
+            Table.findRobotGoal(self, b)
 
 class Square:
     def __init__(self, x, y, cost, role):
