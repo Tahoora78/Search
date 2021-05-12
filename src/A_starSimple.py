@@ -17,13 +17,16 @@ class Table:
         print("row", self.row, "col", self.col)
         for j in range(self.row):
             for i in range(self.col):
-                print("({},{}):".format(i, j), self.table[j][i].heuristicCost, self.table[j][i].role, end = " ")
+                if self.table[j][i].heuristicCost >= 1000000:
+                    print("({},{}):".format(i, j), 'f', self.table[j][i].role, end = " ")
+                else:
+                    print("({},{}):".format(i, j), self.table[j][i].heuristicCost, self.table[j][i].role, end = " ")
             print()
 
     """
     find and set initial state
     """
-    def setR(self):
+    def initR(self):
         for j in range(self.row):
             for i in range(self.col):
                 if (self.table[j][i].role == 'r'):
@@ -33,9 +36,15 @@ class Table:
         self.r = self.table[y][x]
 
     """
+    update robot state
+    """
+    def setR(self, R):
+        self.r = self.table[R.y][R.x]
+
+    """
     find and set butter state(s)
     """
-    def setB(self):
+    def initB(self):
         for j in range(self.row):
             for i in range(self.col):
                 if (self.table[j][i].role == 'b'):
@@ -45,9 +54,23 @@ class Table:
             print("x", self.b[i].x, "y", self.b[i].y, "->", self.b[i].cost, self.b[i].role)
 
     """
+    update butter state
+    """
+    def setB(self, lastB, newB):
+        self.b.remove(lastB)
+        self.b.append(newB)
+
+    """
+    remove B and P
+    """
+    def removeB_P(self, B, P):
+        self.b.remove(B)
+        self.p.remove(P)
+
+    """
     find and set goal state(s)
     """
-    def setP(self):
+    def initP(self):
         for j in range(self.row):
             for i in range(self.col):
                 if (self.table[j][i].role == 'p'):
@@ -245,7 +268,6 @@ class Table:
     def chooseButter(self):
         minCost = 2000000
         for b in self.b:
-            print("butter:", b.x, b.y, b.role, b.heuristicCost)
             if (b.heuristicCost < minCost):
                 minCost = b.heuristicCost
                 if (minCost < 1000000):
@@ -285,44 +307,14 @@ class Table:
             self.table.append(col)
 
         # find and set initial state, butter state(s) and goal state(s)
-        Table.setR(self)
-        Table.setB(self)
-        Table.setP(self)
-
-    def findRobotGoal(self, butter):
-        # first find the next butter's steps
-        nextSteps = []
-        if (butter.y > 0): #UP
-            nextSteps.append(self.table[butter.y - 1][butter.x])
-        if (butter.x > 0): #LEFT
-            nextSteps.append(self.table[butter.y][butter.x - 1])
-        if (butter.y < self.row - 1): #DOWN
-            nextSteps.append(self.table[butter.y + 1][butter.x])
-        if (butter.x < self.col - 1): #RIGHT
-            nextSteps.append(self.table[butter.y][butter.x + 1])
-
-        # find the best step(s)
-        bestSteps = []
-        minCost = 1000000
-        for b in nextSteps:
-            if (b.heuristicCost < minCost):
-                minCost = b.heuristicCost
-        for b in nextSteps:
-            if (b.heuristicCost == minCost):
-                bestSteps.append(b)
-
-        # now find the robot's goal position
-        for b in bestSteps:
-            x = butter.x - (b.x - butter.x)
-            y = butter.y - (b.y - butter.y)
-            if (self.table[y][x].role != 'x'):
-                print ("robot's goal position:", x, y)
-                return self.table[y][x]
+        Table.initR(self)
+        Table.initB(self)
+        Table.initP(self)
 
     """
     A_star search algorithm
     """
-    def search(self):
+    def A_starSearch(self):
         # calculate the cost of each square from goalSquare
         for goal in self.p:
             Table.calculateCostsForSquares(self, goal, goal.x, goal.y)
@@ -335,12 +327,9 @@ class Table:
             if (b == None): # can’t pass the butter
                 return
 
-            # find the next step of butter and so determine the square which robot has to go there
-            robotGoal = Table.findRobotGoal(self, b)
-
             # start the algorithm
-            graph = Graph(Node(self, self.r.x, self.r.y, 'N', self.r.heuristicCost, 0 , robotGoal))
-            if graph.A_star(graph.node, b):
+            graph = Graph(Node(self, self.r.x, self.r.y, b))
+            if graph.A_star(graph.node):
                 print("Target is reachable from source")
             else:
                 print("Target is NOT reachable from source")
@@ -363,25 +352,25 @@ class Square:
         minH = min(self.arrayCost)
         self.heuristicCost = minH
 
-        # print to check
-        # print("x, y:", self.x, self.y, self.arrayCost, self.heuristicCost)
-
 class Node:
-    def __init__(self, state, x, y, action, squareCost, pathCost, robotGoal):
+    def __init__(self, state, x, y, b):
         self.state = state
         self.r_x = int(x)
         self.r_y = int(y)
-        self.action = action
+        self.action = []
         self.heuristic = 0
         self.totalCost = 0
-        self.robotGoal = robotGoal
-        Node.calculateHeuristic(self, robotGoal, squareCost, pathCost)
+        self.b = b
+        Node.calculateHeuristic(self)
 
-    def calculateHeuristic(self, robotGoal, squareCost, pathCost):
-        deltaX = abs(robotGoal.x - self.r_x)
-        deltaY = abs(robotGoal.y - self.r_y)
-        self.heuristic = squareCost + deltaX + deltaY
-        self.totalCost = squareCost + pathCost + deltaX + deltaY
+    def calculateHeuristic(self):
+        deltaX = abs(self.b.x - self.r_x)
+        deltaY = abs(self.b.y - self.r_y)
+        pathCost = len(self.action)
+        bSquareCost = self.b.heuristicCost
+        #print("deltaX", deltaX, "deltaY", deltaY, "bSquareCost", bSquareCost, "pathCost", pathCost)
+        self.heuristic = bSquareCost + deltaX + deltaY
+        self.totalCost = bSquareCost + pathCost + deltaX + deltaY
 
 class Graph:
     def __init__(self, node):
@@ -396,6 +385,178 @@ class Graph:
             print(i.r_x, i.r_y)
 
     """
+    right action in table
+    """
+    def right(self, node):
+        x = node.r_x
+        y = node.r_y
+        result = False
+        if (x + 1) < node.state.col:
+            if node.state.table[y][x+1].role != 'x':
+                if node.state.table[y][x+1].role == 'b' and (x + 2) < node.state.col:
+                    if node.state.table[y][x+2].role == 'n':
+                        node.state.table[y][x+1].role = 'r'
+                        node.state.table[y][x+2].role = 'b'
+                        node.state.table[y][x].role = 'n'
+                        node.state.setR(node.state.table[y][x+1])
+                        node.state.setB(node.state.table[y][x+1], node.state.table[y][x+2])
+                        result = True
+
+                    if node.state.table[y][x+2].role == 'p':
+                        node.state.table[y][x+1].role = 'r'
+                        node.state.table[y][x].role = 'n'
+                        node.state.table[y][x+2].role = 'x'
+                        node.state.setR(node.state.table[y][x+1])
+                        node.state.removeB_P(node.state.table[y][x+1], node.state.table[y][x+2])
+                        result = True
+
+                if (node.state.table[y][x+1].role != 'b') and (node.state.table[y][x+1].role != 'p'):
+                    node.state.table[y][x].role = 'n'
+                    node.state.table[y][x+1].role = 'r'
+                    node.state.setR(node.state.table[y][x+1])
+                    result = True
+
+        if result:
+            node.r_x += 1
+            node.action.append('R')
+            node.calculateHeuristic()
+
+        node.state.printTable()
+        print(node.totalCost)
+        print(node.action)
+
+        return result, node
+
+    """
+    left action in table
+    """
+    def left(self, node):
+        x = node.r_x
+        y = node.r_y
+        result = False
+        if (x - 1) >= 0:
+            if node.state.table[y][x-1].role != 'x':
+                if node.state.table[y][x-1].role == 'b' and (x - 2) >= 0:
+                    if node.state.table[y][x-2].role == 'n':
+                        node.state.table[y][x-1].role = 'r'
+                        node.state.table[y][x-2].role = 'b'
+                        node.state.table[y][x].role = 'n'
+                        node.state.setR(node.state.table[y][x-1])
+                        node.state.setB(node.state.table[y][x-1], node.state.table[y][x-2])
+                        result = True
+
+                    if node.state.table[y][x-2].role == 'p':
+                        node.state.table[y][x-1].role = 'r'
+                        node.state.table[y][x].role = 'n'
+                        node.state.table[y][x-2].role = 'x'
+                        node.state.setR(node.state.table[y][x-1])
+                        node.state.removeB_P(node.state.table[y][x-1], node.state.table[y][x-2])
+                        result = True
+
+                if (node.state.table[y][x+1].role != 'b') and (node.state.table[y][x+1].role != 'p'):
+                    node.state.table[y][x].role = 'n'
+                    node.state.table[y][x-1].role = 'r'
+                    node.state.setR(node.state.table[y][x-1])
+                    result = True
+
+        if result:
+            node.r_x -= 1
+            node.action.append('L')
+            node.calculateHeuristic()
+
+        node.state.printTable()
+        print(node.totalCost)
+        print(node.action)
+
+        return result, node
+
+    """
+    up action in table
+    """
+    def up(self, node):
+        x = node.r_x
+        y = node.r_y
+        result = False
+        if (y - 1) >= 0:
+            if node.state.table[y-1][x].role != 'x':
+                if node.state.table[y-1][x].role == 'b' and (y - 2) >= 0:
+                    if node.state.table[y-2][x].role == 'n':
+                        node.state.table[y-1][x].role = 'r'
+                        node.state.table[y-2][x].role = 'b'
+                        node.state.table[y][x].role = 'n'
+                        node.state.setR(node.state.table[y-1][x])
+                        node.state.setB(node.state.table[y-1][x], node.state.table[y-2][x])
+                        result = True
+
+                    if node.state.table[y-2][x].role == 'p':
+                        node.state.table[y-1][x].role = 'r'
+                        node.state.table[y][x].role = 'n'
+                        node.state.table[y-2][x].role = 'x'
+                        node.state.setR(node.state.table[y-1][x])
+                        node.state.removeB_P(node.state.table[y-1][x], node.state.table[y-2][x])
+                        result = True
+
+                if (node.state.table[y-1][x].role != 'b') and (node.state.table[y-1][x].role != 'p'):
+                    node.state.table[y][x].role = 'n'
+                    node.state.table[y-1][x].role = 'r'
+                    node.state.setR(node.state.table[y-1][x])
+                    result = True
+
+        if result:
+            node.r_y -= 1
+            node.action.append('U')
+            node.calculateHeuristic()
+
+        node.state.printTable()
+        print(node.totalCost)
+        print(node.action)
+
+        return result, node
+
+    """
+    down action in table
+    """
+    def down(self, node):
+        x = node.r_x
+        y = node.r_y
+        result = False
+        if (y + 1) < node.state.row:
+            if node.state.table[y+1][x].role != 'x':
+                if node.state.table[y+1][x].role == 'b' and (y + 2) >= 0:
+                    if node.state.table[y+2][x].role == 'n':
+                        node.state.table[y+1][x].role = 'r'
+                        node.state.table[y+2][x].role = 'b'
+                        node.state.table[y][x].role = 'n'
+                        node.state.setR(node.state.table[y+1][x])
+                        node.state.setB(node.state.table[y+1][x], node.state.table[y+2][x])
+                        result = True
+
+                    if node.state.table[y+2][x].role == 'p':
+                        node.state.table[y+1][x].role = 'r'
+                        node.state.table[y][x].role = 'n'
+                        node.state.table[y+2][x].role = 'x'
+                        node.state.setR(node.state.table[y+1][x])
+                        node.state.removeB_P(node.state.table[y+1][x], node.state.table[y+2][x])
+                        result = True
+
+                if (node.state.table[y+1][x].role != 'b') and (node.state.table[y+1][x].role != 'p'):
+                    node.state.table[y][x].role = 'n'
+                    node.state.table[y+1][x].role = 'r'
+                    node.state.setR(node.state.table[y+1][x])
+                    result = True
+
+        if result:
+            node.r_y += 1
+            node.action.append('D')
+            node.calculateHeuristic()
+
+        node.state.printTable()
+        print(node.totalCost)
+        print(node.action)
+
+        return result, node
+
+    """
 
     """
     def updateFringeList(self, node):
@@ -406,46 +567,27 @@ class Graph:
         if r_result:
             self.fringeList.append(r_next_node)
             newNodes.append(r_next_node)
-            self.addEdge(node, r_next_node, 'R')
 
         l_result, l_next_node = self.left(copy.deepcopy(node))
         if l_result:
             self.fringeList.append(l_next_node)
             newNodes.append(l_next_node)
-            self.addEdge(node, l_next_node, 'L')
 
         u_result, u_next_node = self.up(copy.deepcopy(node))
         if u_result:
             self.fringeList.append(u_next_node)
             newNodes.append(u_next_node)
-            self.addEdge(node, u_next_node, 'U')
 
         d_result, d_next_node = self.down(copy.deepcopy(node))
         if d_result:
             self.fringeList.append(d_next_node)
             newNodes.append(d_next_node)
-            self.addEdge(node, d_next_node, 'D')
 
         print("self.fringeList")
         for i in self.fringeList:
             print(i.r_x, i.r_y)
 
         return newNodes
-
-    """
-
-    """
-    def goToButterPosition():
-
-
-    """
-    check if robot is at robotGoal
-    """
-    def check_robotGoal(self, node, robotGoal):
-        if (node.state.r.x == robotGoal.x and node.state.r.y == robotGoal.y):
-            return True
-        else:
-            return False
 
     """
     check if state is goal
@@ -459,171 +601,15 @@ class Graph:
     """
 
     """
-    def A_starForRobotGoal(self, src, b):
-        goal = src.robotGoal
-        result = False
-
-        # check if robot reach the robotGoal position
-        if self.check_robotGoal(src, goal):
-            result = True
-            target = src
-
-            # so robot has tp go to the butter's position
-            self.goToButterPosition()
-
-        else:
-            newNodes = self.updateFringeList(src)
-
-        return result, target
-
-    """
-
-    """
-    def A_star(self, src, b):
+    def A_star(self, src):
         # first check if initial state is goal == (Table.p = None)
         if self.check_goal(src):
             print("initial state is goal")
             return
 
-        while (len(node.state.p) != 0):
-            result, newButterPos = self.A_starForRobotGoal(src, b)
-            if (result):
-
-
-#######################################################################################################
-    def addEdge(self, u, v, action):
-        v.action = action
-        self.graph[u].append(v)
-
-    def up(self, node):
-        x = node.r_x
-        y = node.r_y
-        result = False
-        if (y - 1) >= 0:
-            if 'x' not in node.state[y-1][x]:
-                if 'b' in node.state[y-1][x] and (y - 2) >= 0:
-                    if not('x' in node.state[y-2][x]) and not('p' in node.state[y-2][x]) and not('b' in node.state[y-2][x]):
-                        node.state[y-1][x] = node.state[y-1][x].replace('b', 'r')
-                        node.state[y-2][x] = node.state[y-2][x]+'b'
-                        node.state[y][x] = node.state[y][x].replace('r', '')
-                        result = True
-                        node.r_y -= 1
-                        return result, node
-                    if 'p' in node.state[y-2][x]:
-                        node.state[y-1][x] = node.state[y-1][x].replace('b', 'r')
-                        node.state[y][x] = node.state[y][x].replace('r', '')
-                        node.state[y-2][x] = node.state[y-2][x].replace('p', 'x')
-                        result = True
-                        node.r_y -= 1
-                        return result, node
-                if not('b' in node.state[y-1][x]) and not('p' in node.state[y-1][x]):
-                    node.state[y][x] = node.state[y][x].replace('r', '')
-                    node.state[y-1][x] = node.state[y-1][x]+'r'
-                    result = True
-                    node.r_y -= 1
-                    return result, node
-        return result, node
-
-    def down(self, node):
-        x = node.r_x
-        y = node.r_y
-        result = False
-        if (y + 1) < len(node.state):
-            if 'x' not in node.state[y+1][x]:
-                if 'b' in node.state[y+1][x] and (y + 2) < len(node.state):
-                    if not('x' in node.state[y+2][x]) and not('p' in node.state[y+2][x]) and not('b' in node.state[y+2][x]):
-                        node.state[y+1][x] = node.state[y+1][x].replace('b', 'r')
-                        node.state[y+2][x] = node.state[y+2][x]+'b'
-                        node.state[y][x] = node.state[y][x].replace('r', '')
-                        result = True
-                        node.r_y += 1
-                        return result, node
-                    if 'p' in node.state[y+2][x]:
-                        node.state[y+1][x] = node.state[y+1][x].replace('b', 'r')
-                        node.state[y][x] = node.state[y][x].replace('r', '')
-                        node.state[y+2][x] = node.state[y+2][x].replace('p', 'x')
-                        result = True
-                        node.r_y += 1
-                        return result, node
-                if not('b' in node.state[y+1][x]) and not('p' in node.state[y+1][x]):
-                    node.state[y][x] = node.state[y][x].replace('r', '')
-                    node.state[y+1][x] = node.state[y+1][x]+'r'
-                    result = True
-                    node.r_y += 1
-                    return result, node
-        return result, node
-
-    def right(self, node):
-        x = node.r_x
-        y = node.r_y
-        result = False
-        if (x + 1) < len(node.state.col):
-            if (node.state.table[y][x+1].role != 'x'):
-                if node.state.table[y][x+1].role == 'b' and (x + 2) < len(node.state.col):
-                    if not('x' in node.state[y][x+2]) and not('p' in node.state[y][x+2]) and not('b' in node.state[y][x+2]):
-                        node.state[y][x+1] = node.state[y][x+1].replace('b', 'r')
-                        node.state[y][x+2] = node.state[y][x+2]+'b'
-                        node.state[y][x] = node.state[y][x].replace('r', '')
-                        result = True
-                        node.r_x += 1
-                        return result, node
-                    if 'p' in node.state[y][x+2]:
-                        node.state[y][x + 1] = node.state[y][x + 1].replace('b', 'r')
-                        node.state[y][x] = node.state[y][x].replace('r', '')
-                        node.state[y][x + 2] = node.state[y][x + 2].replace('p','x')
-                        result = True
-                        node.r_x += 1
-                        return result, node
-                if not('b' in node.state[y][x+1]) and not('p' in node.state[y][x+1]):
-                    node.state[y][x] = node.state[y][x].replace('r', '')
-                    node.state[y][x+1] = node.state[y][x+1]+'r'
-                    result = True
-                    node.r_x += 1
-                    return result, node
-        return result, node
-
-    def left(self, node):
-        x = node.r_x
-        y = node.r_y
-        result = False
-        if (x - 1) >= 0:
-            if 'x' not in node.state[y][x-1]:
-                if 'b' in node.state[y][x-1] and (x - 2) >= 0:
-                    if not('x' in node.state[y][x-2]) and not('p' in node.state[y][x-2]) and not('b' in node.state[y][x-2]):
-                        node.state[y][x-1] = node.state[y][x-1].replace('b', 'r')
-                        node.state[y][x-2] = node.state[y][x-2]+'b'
-                        node.state[y][x] = node.state[y][x].replace('r', '')
-                        result = True
-                        node.r_x -= 1
-                        return result, node
-                    if 'p' in node.state[y][x-2]:
-                        node.state[y][x - 1] = node.state[y][x - 1].replace('b', 'r')
-                        node.state[y][x] = node.state[y][x].replace('r', '')
-                        node.state[y][x - 2] = node.state[y][x - 2].replace('p', 'x')
-                        result = True
-                        node.r_x -= 1
-                        return result, node
-                if not('b' in node.state[y][x-1]) and not('p' in node.state[y][x-1]):
-                    node.state[y][x] = node.state[y][x].replace('r', '')
-                    node.state[y][x-1] = node.state[y][x-1]+'r'
-                    result = True
-                    node.r_x -= 1
-                    return result, node
-        return result, node
-
-    def print_state(self, node):
-        print(len(node.state), " ", len(node.state[1]))
-        for i in node.state:
-            for j in i:
-                print(j, end="  ")
-            print()
-
-    def find_key_value(self, val):
-        for key, value in self.graph.items():
-            if val in value:
-                return key
+        newNodes = self.updateFringeList(src)
 
 y, x = input().split()
 states = Table(int(y), int(x))
 Table.setTable(states)
-Table.search(states)
+Table.A_starSearch(states)
