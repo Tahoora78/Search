@@ -384,6 +384,9 @@ class Graph:
         for i in self.fringeList:
             print(i.r_x, i.r_y)
 
+    """
+    right action in table
+    """
     def right(self, node):
         x = node.r_x
         y = node.r_y
@@ -420,11 +423,12 @@ class Graph:
 
         node.state.printTable()
         print(node.totalCost)
+        print(node.action)
 
         return result, node
 
     """
-
+    left action in table
     """
     def left(self, node):
         x = node.r_x
@@ -462,6 +466,93 @@ class Graph:
 
         node.state.printTable()
         print(node.totalCost)
+        print(node.action)
+
+        return result, node
+
+    """
+    up action in table
+    """
+    def up(self, node):
+        x = node.r_x
+        y = node.r_y
+        result = False
+        if (y - 1) >= 0:
+            if node.state.table[y-1][x].role != 'x':
+                if node.state.table[y-1][x].role == 'b' and (y - 2) >= 0:
+                    if node.state.table[y-2][x].role == 'n':
+                        node.state.table[y-1][x].role = 'r'
+                        node.state.table[y-2][x].role = 'b'
+                        node.state.table[y][x].role = 'n'
+                        node.state.setR(node.state.table[y-1][x])
+                        node.state.setB(node.state.table[y-1][x], node.state.table[y-2][x])
+                        result = True
+
+                    if node.state.table[y-2][x].role == 'p':
+                        node.state.table[y-1][x].role = 'r'
+                        node.state.table[y][x].role = 'n'
+                        node.state.table[y-2][x].role = 'x'
+                        node.state.setR(node.state.table[y-1][x])
+                        node.state.removeB_P(node.state.table[y-1][x], node.state.table[y-2][x])
+                        result = True
+
+                if (node.state.table[y-1][x].role != 'b') and (node.state.table[y-1][x].role != 'p'):
+                    node.state.table[y][x].role = 'n'
+                    node.state.table[y-1][x].role = 'r'
+                    node.state.setR(node.state.table[y-1][x])
+                    result = True
+
+        if result:
+            node.r_y -= 1
+            node.action.append('U')
+            node.calculateHeuristic()
+
+        node.state.printTable()
+        print(node.totalCost)
+        print(node.action)
+
+        return result, node
+
+    """
+    down action in table
+    """
+    def down(self, node):
+        x = node.r_x
+        y = node.r_y
+        result = False
+        if (y + 1) < node.state.row:
+            if node.state.table[y+1][x].role != 'x':
+                if node.state.table[y+1][x].role == 'b' and (y + 2) >= 0:
+                    if node.state.table[y+2][x].role == 'n':
+                        node.state.table[y+1][x].role = 'r'
+                        node.state.table[y+2][x].role = 'b'
+                        node.state.table[y][x].role = 'n'
+                        node.state.setR(node.state.table[y+1][x])
+                        node.state.setB(node.state.table[y+1][x], node.state.table[y+2][x])
+                        result = True
+
+                    if node.state.table[y+2][x].role == 'p':
+                        node.state.table[y+1][x].role = 'r'
+                        node.state.table[y][x].role = 'n'
+                        node.state.table[y+2][x].role = 'x'
+                        node.state.setR(node.state.table[y+1][x])
+                        node.state.removeB_P(node.state.table[y+1][x], node.state.table[y+2][x])
+                        result = True
+
+                if (node.state.table[y+1][x].role != 'b') and (node.state.table[y+1][x].role != 'p'):
+                    node.state.table[y][x].role = 'n'
+                    node.state.table[y+1][x].role = 'r'
+                    node.state.setR(node.state.table[y+1][x])
+                    result = True
+
+        if result:
+            node.r_y += 1
+            node.action.append('D')
+            node.calculateHeuristic()
+
+        node.state.printTable()
+        print(node.totalCost)
+        print(node.action)
 
         return result, node
 
@@ -481,19 +572,16 @@ class Graph:
         if l_result:
             self.fringeList.append(l_next_node)
             newNodes.append(l_next_node)
-            self.addEdge(node, l_next_node, 'L')
 
         u_result, u_next_node = self.up(copy.deepcopy(node))
         if u_result:
             self.fringeList.append(u_next_node)
             newNodes.append(u_next_node)
-            self.addEdge(node, u_next_node, 'U')
 
         d_result, d_next_node = self.down(copy.deepcopy(node))
         if d_result:
             self.fringeList.append(d_next_node)
             newNodes.append(d_next_node)
-            self.addEdge(node, d_next_node, 'D')
 
         print("self.fringeList")
         for i in self.fringeList:
@@ -520,71 +608,6 @@ class Graph:
             return
 
         newNodes = self.updateFringeList(src)
-
-
-
-#######################################################################################################
-    def addEdge(self, u, v, action):
-        v.action = action
-        self.graph[u].append(v)
-
-    def up(self, node):
-        x = node.r_x
-        y = node.r_y
-        result = False
-        if (y - 1) >= 0:
-            if 'x' not in node.state[y-1][x]:
-                if 'b' in node.state[y-1][x] and (y - 2) >= 0:
-                    if not('x' in node.state[y-2][x]) and not('p' in node.state[y-2][x]) and not('b' in node.state[y-2][x]):
-                        node.state[y-1][x] = node.state[y-1][x].replace('b', 'r')
-                        node.state[y-2][x] = node.state[y-2][x]+'b'
-                        node.state[y][x] = node.state[y][x].replace('r', '')
-                        result = True
-                        node.r_y -= 1
-                        return result, node
-                    if 'p' in node.state[y-2][x]:
-                        node.state[y-1][x] = node.state[y-1][x].replace('b', 'r')
-                        node.state[y][x] = node.state[y][x].replace('r', '')
-                        node.state[y-2][x] = node.state[y-2][x].replace('p', 'x')
-                        result = True
-                        node.r_y -= 1
-                        return result, node
-                if not('b' in node.state[y-1][x]) and not('p' in node.state[y-1][x]):
-                    node.state[y][x] = node.state[y][x].replace('r', '')
-                    node.state[y-1][x] = node.state[y-1][x]+'r'
-                    result = True
-                    node.r_y -= 1
-                    return result, node
-        return result, node
-
-    def down(self, node):
-        x = node.r_x
-        y = node.r_y
-        result = False
-        if (y + 1) < len(node.state):
-            if 'x' not in node.state[y+1][x]:
-                if 'b' in node.state[y+1][x] and (y + 2) < len(node.state):
-                    if not('x' in node.state[y+2][x]) and not('p' in node.state[y+2][x]) and not('b' in node.state[y+2][x]):
-                        node.state[y+1][x] = node.state[y+1][x].replace('b', 'r')
-                        node.state[y+2][x] = node.state[y+2][x]+'b'
-                        node.state[y][x] = node.state[y][x].replace('r', '')
-                        result = True
-                        node.r_y += 1
-                        return result, node
-                    if 'p' in node.state[y+2][x]:
-                        node.state[y+1][x] = node.state[y+1][x].replace('b', 'r')
-                        node.state[y][x] = node.state[y][x].replace('r', '')
-                        node.state[y+2][x] = node.state[y+2][x].replace('p', 'x')
-                        result = True
-                        node.r_y += 1
-                        return result, node
-                if not('b' in node.state[y+1][x]) and not('p' in node.state[y+1][x]):
-                    node.state[y][x] = node.state[y][x].replace('r', '')
-                    node.state[y+1][x] = node.state[y+1][x]+'r'
-                    result = True
-                    node.r_y += 1
-                    return result, node
-        return result, node
 
 y, x = input().split()
 states = Table(int(y), int(x))
