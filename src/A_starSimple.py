@@ -328,8 +328,11 @@ class Table:
                 return
 
             # start the algorithm
-            graph = Graph(Node(self, self.r.x, self.r.y, b))
-            if graph.A_star(graph.node):
+            graph = Graph(Node(self, self.r.x, self.r.y, b, 0), goal)
+            result, update = graph.A_star(graph.node)
+            self = update
+
+            if result:
                 print("Target is reachable from source")
             else:
                 print("Target is NOT reachable from source")
@@ -353,29 +356,31 @@ class Square:
         self.heuristicCost = minH
 
 class Node:
-    def __init__(self, state, x, y, b):
+    def __init__(self, state, x, y, b, pathCost):
         self.state = state
         self.r_x = int(x)
         self.r_y = int(y)
         self.action = []
         self.heuristic = 0
+        self.pathCost = pathCost
         self.totalCost = 0
         self.b = b
-        Node.calculateHeuristic(self)
+        Node.calculateHeuristic(self, pathCost)
 
-    def calculateHeuristic(self):
+    def calculateHeuristic(self, addPathCost):
         deltaX = abs(self.b.x - self.r_x)
         deltaY = abs(self.b.y - self.r_y)
-        pathCost = len(self.action)
         bSquareCost = self.b.heuristicCost
-        #print("deltaX", deltaX, "deltaY", deltaY, "bSquareCost", bSquareCost, "pathCost", pathCost)
+        self.pathCost += addPathCost
+        print("deltaX", deltaX, "deltaY", deltaY, "bSquareCost", bSquareCost, "pathCost", self.pathCost)
         self.heuristic = bSquareCost + deltaX + deltaY
-        self.totalCost = bSquareCost + pathCost + deltaX + deltaY
+        self.totalCost = bSquareCost + self.pathCost + deltaX + deltaY
 
 class Graph:
-    def __init__(self, node):
+    def __init__(self, node, p):
         self.node = node
         self.graph = defaultdict(list)
+        self.p = p
 
         self.fringeList = []
         self.fringeList.append(node)
@@ -391,6 +396,7 @@ class Graph:
         x = node.r_x
         y = node.r_y
         result = False
+        isFinal = False
         if (x + 1) < node.state.col:
             if node.state.table[y][x+1].role != 'x':
                 if node.state.table[y][x+1].role == 'b' and (x + 2) < node.state.col:
@@ -400,6 +406,7 @@ class Graph:
                         node.state.table[y][x].role = 'n'
                         node.state.setR(node.state.table[y][x+1])
                         node.state.setB(node.state.table[y][x+1], node.state.table[y][x+2])
+                        node.b = node.state.table[y][x+2]
                         result = True
 
                     if node.state.table[y][x+2].role == 'p':
@@ -409,6 +416,7 @@ class Graph:
                         node.state.setR(node.state.table[y][x+1])
                         node.state.removeB_P(node.state.table[y][x+1], node.state.table[y][x+2])
                         result = True
+                        isFinal = True
 
                 if (node.state.table[y][x+1].role != 'b') and (node.state.table[y][x+1].role != 'p'):
                     node.state.table[y][x].role = 'n'
@@ -419,13 +427,13 @@ class Graph:
         if result:
             node.r_x += 1
             node.action.append('R')
-            node.calculateHeuristic()
+            node.calculateHeuristic(node.state.table[y][x+1].cost)
 
-        node.state.printTable()
-        print(node.totalCost)
-        print(node.action)
+            #node.state.printTable()
+            print(node.totalCost)
+            print(node.action)
 
-        return result, node
+        return result, node, isFinal
 
     """
     left action in table
@@ -434,6 +442,7 @@ class Graph:
         x = node.r_x
         y = node.r_y
         result = False
+        isFinal = False
         if (x - 1) >= 0:
             if node.state.table[y][x-1].role != 'x':
                 if node.state.table[y][x-1].role == 'b' and (x - 2) >= 0:
@@ -443,6 +452,7 @@ class Graph:
                         node.state.table[y][x].role = 'n'
                         node.state.setR(node.state.table[y][x-1])
                         node.state.setB(node.state.table[y][x-1], node.state.table[y][x-2])
+                        node.b = node.state.table[y][x-2]
                         result = True
 
                     if node.state.table[y][x-2].role == 'p':
@@ -452,8 +462,9 @@ class Graph:
                         node.state.setR(node.state.table[y][x-1])
                         node.state.removeB_P(node.state.table[y][x-1], node.state.table[y][x-2])
                         result = True
+                        isFinal = True
 
-                if (node.state.table[y][x+1].role != 'b') and (node.state.table[y][x+1].role != 'p'):
+                if (node.state.table[y][x-1].role != 'b') and (node.state.table[y][x-1].role != 'p'):
                     node.state.table[y][x].role = 'n'
                     node.state.table[y][x-1].role = 'r'
                     node.state.setR(node.state.table[y][x-1])
@@ -462,13 +473,13 @@ class Graph:
         if result:
             node.r_x -= 1
             node.action.append('L')
-            node.calculateHeuristic()
+            node.calculateHeuristic(node.state.table[y][x-1].cost)
 
-        node.state.printTable()
-        print(node.totalCost)
-        print(node.action)
+            #node.state.printTable()
+            print(node.totalCost)
+            print(node.action)
 
-        return result, node
+        return result, node, isFinal
 
     """
     up action in table
@@ -477,6 +488,7 @@ class Graph:
         x = node.r_x
         y = node.r_y
         result = False
+        isFinal = False
         if (y - 1) >= 0:
             if node.state.table[y-1][x].role != 'x':
                 if node.state.table[y-1][x].role == 'b' and (y - 2) >= 0:
@@ -486,6 +498,7 @@ class Graph:
                         node.state.table[y][x].role = 'n'
                         node.state.setR(node.state.table[y-1][x])
                         node.state.setB(node.state.table[y-1][x], node.state.table[y-2][x])
+                        node.b = node.state.table[y-2][x]
                         result = True
 
                     if node.state.table[y-2][x].role == 'p':
@@ -495,6 +508,7 @@ class Graph:
                         node.state.setR(node.state.table[y-1][x])
                         node.state.removeB_P(node.state.table[y-1][x], node.state.table[y-2][x])
                         result = True
+                        isFinal = True
 
                 if (node.state.table[y-1][x].role != 'b') and (node.state.table[y-1][x].role != 'p'):
                     node.state.table[y][x].role = 'n'
@@ -505,13 +519,13 @@ class Graph:
         if result:
             node.r_y -= 1
             node.action.append('U')
-            node.calculateHeuristic()
+            node.calculateHeuristic(node.state.table[y-1][x].cost)
 
-        node.state.printTable()
-        print(node.totalCost)
-        print(node.action)
+            #node.state.printTable()
+            print(node.totalCost)
+            print(node.action)
 
-        return result, node
+        return result, node, isFinal
 
     """
     down action in table
@@ -520,15 +534,17 @@ class Graph:
         x = node.r_x
         y = node.r_y
         result = False
+        isFinal = False
         if (y + 1) < node.state.row:
             if node.state.table[y+1][x].role != 'x':
-                if node.state.table[y+1][x].role == 'b' and (y + 2) >= 0:
+                if node.state.table[y+1][x].role == 'b' and (y + 2) < node.state.row:
                     if node.state.table[y+2][x].role == 'n':
                         node.state.table[y+1][x].role = 'r'
                         node.state.table[y+2][x].role = 'b'
                         node.state.table[y][x].role = 'n'
                         node.state.setR(node.state.table[y+1][x])
                         node.state.setB(node.state.table[y+1][x], node.state.table[y+2][x])
+                        node.b = node.state.table[y+2][x]
                         result = True
 
                     if node.state.table[y+2][x].role == 'p':
@@ -538,6 +554,7 @@ class Graph:
                         node.state.setR(node.state.table[y+1][x])
                         node.state.removeB_P(node.state.table[y+1][x], node.state.table[y+2][x])
                         result = True
+                        isFinal = True
 
                 if (node.state.table[y+1][x].role != 'b') and (node.state.table[y+1][x].role != 'p'):
                     node.state.table[y][x].role = 'n'
@@ -548,13 +565,13 @@ class Graph:
         if result:
             node.r_y += 1
             node.action.append('D')
-            node.calculateHeuristic()
+            node.calculateHeuristic(node.state.table[y+1][x].cost)
 
-        node.state.printTable()
-        print(node.totalCost)
-        print(node.action)
+            #node.state.printTable()
+            print(node.totalCost)
+            print(node.action)
 
-        return result, node
+        return result, node, isFinal
 
     """
 
@@ -562,41 +579,71 @@ class Graph:
     def updateFringeList(self, node):
         self.fringeList.remove(node)
         newNodes = []
+        isFinal = False
 
-        r_result, r_next_node = self.right(copy.deepcopy(node))
+        r_result, r_next_node, isFinal = self.right(copy.deepcopy(node))
         if r_result:
             self.fringeList.append(r_next_node)
             newNodes.append(r_next_node)
 
-        l_result, l_next_node = self.left(copy.deepcopy(node))
+        l_result, l_next_node, isFinal = self.left(copy.deepcopy(node))
         if l_result:
             self.fringeList.append(l_next_node)
             newNodes.append(l_next_node)
 
-        u_result, u_next_node = self.up(copy.deepcopy(node))
+        u_result, u_next_node, isFinal = self.up(copy.deepcopy(node))
         if u_result:
             self.fringeList.append(u_next_node)
             newNodes.append(u_next_node)
 
-        d_result, d_next_node = self.down(copy.deepcopy(node))
+        d_result, d_next_node,isFinal = self.down(copy.deepcopy(node))
         if d_result:
             self.fringeList.append(d_next_node)
             newNodes.append(d_next_node)
 
-        print("self.fringeList")
-        for i in self.fringeList:
-            print(i.r_x, i.r_y)
+        #print("self.fringeList")
+        #for i in self.fringeList:
+        #    print(i.r_x, i.r_y)
 
-        return newNodes
+        return newNodes, isFinal
 
     """
     check if state is goal
     """
     def check_goal(self, node):
-        if (len(node.state.p) == 0):
+        if self.p.x == node.b.x and self.p.y == node.b.y:
+        #if (len(node.state.p) == 0):
+            print("p.x", self.p.x, "b.x", node.b.x)
+            print("p.y", self.p.y, "b.y", node.b.y)
             return True
         else:
             return False
+
+    def calculateMinFringeCost(self):
+        minTotalFringeCosts = 1000000
+        node = None
+
+        for n in self.fringeList:
+            if n.totalCost < minTotalFringeCosts:
+                minTotalFringeCosts = n.totalCost
+                node = n
+
+        return minTotalFringeCosts, node
+
+    def findMinNewNode(self, newNodes):
+        minCostOfNewNodes = 1000000
+        node = None
+
+        for n in newNodes:
+            if self.check_goal(n):
+                print("goal has achieved")
+                return None, None
+
+            if n.totalCost < minCostOfNewNodes:
+                minCostOfNewNodes = n.totalCost
+                node = n
+
+        return minCostOfNewNodes, node
 
     """
 
@@ -605,9 +652,33 @@ class Graph:
         # first check if initial state is goal == (Table.p = None)
         if self.check_goal(src):
             print("initial state is goal")
-            return
+            return True, src.state
 
-        newNodes = self.updateFringeList(src)
+        newNodes, isFinal = self.updateFringeList(src)
+
+        while not isFinal:
+            minCostOfNewNodes, minNewNode = self.findMinNewNode(newNodes)
+            minTotalFringeCosts, midNode = self.calculateMinFringeCost()
+            print("minCostOfNewNodes", minCostOfNewNodes)
+            print("minTotalFringeCosts", minTotalFringeCosts)
+
+            if minNewNode == None:
+                return True, minNewNode
+
+            if minCostOfNewNodes <= minTotalFringeCosts:
+                print("we will continue")
+                target = minNewNode
+                print("selelelelelelel", target.action)
+                newNodes, isFinal = self.updateFringeList(target)
+            else:
+                print("we should check again")
+                target = midNode
+                print("selelelelelelel", target.action)
+                newNodes, isFinal = self.updateFringeList(target)
+
+            target.state.printTable()
+
+        return True, target
 
 y, x = input().split()
 states = Table(int(y), int(x))
